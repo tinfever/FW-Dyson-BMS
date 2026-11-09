@@ -34,13 +34,22 @@ void ISL_Init(void){
      00 = Overcurrent timeout 160ms or 2.5ms if discharge time divider set. 2.5ms selected. Can't set any lower.*/
     ISL_Write_Register(DischargeSet, 0b00001000);
     
-    /* 0 = Auto OC charge control enabled
-     10 = 140mV Charge OC threshold @ 100mOhm shunt = 1.4A limit. Ran in to overcurrent charging trips using 600mA Dyson wall adapter with 1A limit set. Set here to 1.4A to match how the original BMS behaved.
+    /* 
+	 0 = Auto OC charge control enabled
+    10 = 140mV Charge OC threshold @ 100mOhm shunt = 1.4A limit. Ran in to overcurrent charging trips using 600mA Dyson wall adapter with 1A limit set. Set here to 1.4A to match how the original BMS behaved.
      0 = short circuit timeout of 190us
-     1 = charge OC delay divided by 32,  = 2.5ms
+     1 = charge OC delay divided by 32
      1 = discharge OC delay divided by 64 = 2.5ms
-     00 = OC charge timeout 80ms or 2.5ms if charge time divider set. 2.5ms selected.
-     */
+    
+	Charge OC timeout options with the charge time divider set:
+	
+	| Register   | Timeout | Actual tolerance range |
+	| ---------- | ------  | ---------------------- |
+	| 0b01001100 | 2.5 ms  | 1.25–3.75 ms           |
+	| 0b01001101 |  5  ms  | 2.5–7.5 ms             |(selected)
+	| 0b01001110 | 10  ms  | 5–15 ms                |
+	| 0b01001111 | 20  ms  | 10–30 ms               |
+	*/
     ISL_Write_Register(ChargeSet, 0b01001101);
    
     ISL_Write_Register(AnalogOut, 0b11000000);  //Set User Flag 1 and 0 so we can detect if ISL browns out
@@ -98,7 +107,7 @@ uint8_t ISL_GetSpecificBits_cached(const isl_locate_t params[3]){     //Can be u
 uint16_t ISL_GetAnalogOutmV(isl_analogout_t value){
     DAC_SetOutput(0);   //Make sure DAC is set to 0V
     ADC_SelectChannel(ADC_PIC_DAC); //Connect ADC to 0V to empty internal ADC sample/hold capacitor
-    __delay_us(1);  //Wait a little bit 1�s
+    __delay_us(1);  //Wait a little bit 1µs
     ADC_SelectChannel(ADC_ISL_OUT); //Connect ADC to analog out of ISL94208
     ISL_SetSpecificBits(ISL.ANALOG_OUT_SELECT_4bits, value);    //Set the ISL to output desired signal on analog out
     __delay_us(100); //ISL94208 has maximum analog output stabilization time of 0.1ms = 100us
